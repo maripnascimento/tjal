@@ -19,14 +19,25 @@ def get_lawsuit(number):
 		#'uuidCaptcha':''
 	}
 
-
+	params2 = {
+		'conversationId':'',
+		#'paginaConsulta':'0',
+		'cbPesquisa':'NUMPROC',
+		#'numeroDigitoAnoUnificado':'0800-88.2021',
+		#'foroNumeroUnificado':'',
+		'dePesquisaNuUnificado': number,
+		#'dadosConsulta.valorConsulta':'',
+		'tipoNuProcesso':'UNIFICADO',
+		#'uuidCaptcha':''
+	}
+	
 	response_1degree = requests.get('https://www2.tjal.jus.br/cpopg/search.do',params=params)
-	response_2degree = requests.get('https://www2.tjal.jus.br/cposg5/search.do',params=params)
+	response_2degree = requests.get('https://www2.tjal.jus.br/cposg5/search.do',params=params2)
 	
 	for response in [response_1degree, response_2degree]:
 		lawsuit = parse(response.content)
-	if lawsuit:
-	lawsuits.append(lawsuit)	
+		if lawsuit:
+			lawsuits.append(lawsuit)	
 	
 	return lawsuits
 
@@ -44,9 +55,9 @@ def parse(data):
 	judge = extract_by_regex(re.compile(r'Juiz:\s*(.*)'),text)
 	value = extract_by_regex(re.compile(r'Valor da a.*o:\s*(.*)'),text)
 	court_section = extract_by_regex(re.compile(r'(\d{1,2}.\sVara.*)'),text)
-	related_people = get_related_people(data)
-	activity_list = get_activity_list(data)
-	petitions = get_petitions(data)
+	related_people = get_related_people(parsed)
+	activity_list = get_activity_list(parsed)
+
 
 	lawsuit = {
 		'subject':subject,
@@ -58,10 +69,9 @@ def parse(data):
 		'court_section':court_section,
 		'related_people':related_people,
 		'activity_list':activity_list,
-		'petitions':petitions
 	}
 
-	return lawsuits	
+	return lawsuit	
 
 def not_found(text):
 
@@ -92,6 +102,7 @@ def get_related_people(data):
 	print('extraindo partes do processo')
 
 	related_people = []
+	#import pdb; pdb.set_trace()
 	table = data.find('table', id='tablePartesPrincipais')
 	trs = table.find_all('tr')
 	for tr in trs:
@@ -122,24 +133,8 @@ def get_activity_list(data):
 	
 	return activity_list
 
-def get_petitions(data):
-	print('extraindo as peticoes do processo')
 
-	petitions = []
-	table = data.find_all('table')[-10]
-	trs = table.find_all('tr')
-	for tr in trs:
-		tds = tr.find_all('td')
-		if len(tds)>1:
-			petition = {
-			'text':normalize_text(tds[1].text.strip()),
-			'date':normalize_text(tds[0].text.strip())
-			}
-			petitions.append(petition)
-
-	return petitions
-
-print(get_lawsuit())
+print(get_lawsuit("0701316-22.2020.8.02.0051"))
 
 
 
